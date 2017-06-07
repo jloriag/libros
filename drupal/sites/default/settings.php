@@ -764,11 +764,11 @@ $settings['file_scan_ignore_directories'] = [
 #   include $app_root . '/' . $site_path . '/settings.local.php';
 # }
 $databases['default']['default'] = array (
-  'database' => 'dp_alpha',
-  'username' => 'student',
-  'password' => '1234$una',
+  'database' => 'libros',
+  'username' => 'root',
+  'password' => '',
   'prefix' => '',
-  'host' => '162.243.30.155',
+  'host' => 'localhost',
   'port' => '3306',
   'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
   'driver' => 'mysql',
