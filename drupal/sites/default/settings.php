@@ -295,7 +295,7 @@ $config_directories = array();
  *   $settings['hash_salt'] = file_get_contents('/home/example/salt.txt');
  * @endcode
  */
-$settings['hash_salt'] = '4mN-Bl8SdE9znmncPJUG8ZoPfbfhYput_BEjcG9Pos_K8ayod6Wg6bsLy4fRZSNLafmQJcupgw';
+$settings['hash_salt'] = 'uX0ID1CP87ivFLGEDJBOaYkKaC3iFwmXpxMlawSHo140D9eQHnyOoAu5P4iuPgVNqfeC5jB0Bg';
 
 /**
  * Deployment identifier.
@@ -760,9 +760,9 @@ $settings['file_scan_ignore_directories'] = [
  * Keep this code block at the end of this file to take full effect.
  */
 #
-# if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
-#   include $app_root . '/' . $site_path . '/settings.local.php';
-# }
+ if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
+   include $app_root . '/' . $site_path . '/settings.local.php';
+ }
 $databases['default']['default'] = array (
   'database' => 'libros',
   'username' => 'root',
@@ -774,4 +774,5 @@ $databases['default']['default'] = array (
   'driver' => 'mysql',
 );
 $settings['install_profile'] = 'standard';
-$config_directories['sync'] = 'sites/default/files/config_zauVU2LXRj0d7wYdNwcFidP8I1N92tkDFVQIP5eoIoTrXUP2fFe292x--JMtZiWF1LybCo0CKQ/sync';
+$config_directories['sync'] = 'sites/default/files/config_biFmSOU9IBL7lpanDH2ysRfsVeGyzUbNGMILSwtKvfS1qifdLwVhmDW_w2VZeN96wQEy7LfWzg/sync';
+$settings['twig_debug'] = TRUE;
