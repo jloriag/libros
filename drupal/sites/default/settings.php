@@ -765,8 +765,8 @@ $settings['file_scan_ignore_directories'] = [
  }
 $databases['default']['default'] = array (
   'database' => 'libros',
-  'username' => 'student',
-  'password' => '1234$una',
+  'username' => 'root',
+  'password' => '',
   'prefix' => '',
   'host' => 'localhost',
   'port' => '3306',

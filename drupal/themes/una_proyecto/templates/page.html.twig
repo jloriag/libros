@@ -103,13 +103,31 @@
     <div role="main" class="main-container {{ container }} js-quickedit-main-content">
 
         <div class="row">
-
             {% if is_front %}
-                {# Header #}
+                {# Menu Lateral #}
+                {% if page.menu_lateral %}
+                    {% block menu_lateral %}
+                        <div id="menu_lateral" class="col-sm-3" >
+                            {{ page.menu_lateral }}
+                        </div>
+                    {% endblock %}
+                {% endif %}
+
+
+                {# Carousel #}
                 {% if page.carousel %}
                     {% block carousel %}
-                        <div id="carousel_inicio" class="col-sm-12" >
+                        <div id="carousel_inicio" class="col-sm-9" >
                             {{ page.carousel }}
+                        </div>
+                    {% endblock %}
+                {% endif %}
+
+                {# Libros #}
+                {% if page.libros %}
+                    {% block libros %}
+                        <div class="col-sm-12" >
+                            {{ page.libros }}
                         </div>
                     {% endblock %}
                 {% endif %}
