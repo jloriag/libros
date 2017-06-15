@@ -1,0 +1,10 @@
+.carousel-inner { 
+	padding-bottom:95px; 
+}
+.carousel-caption { 
+	bottom:-130px; 
+	color: black;
+}
+.carousel-indicators {
+	top: 10px;
+}
