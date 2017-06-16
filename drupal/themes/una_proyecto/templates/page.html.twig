@@ -103,6 +103,15 @@
     <div role="main" class="main-container {{ container }} js-quickedit-main-content">
 
         <div class="row">
+
+            {# Header #}
+            {% if page.header %}
+                {% block header %}
+                    <div class="col-sm-12" role="heading">
+                        {{ page.header }}
+                    </div>
+                {% endblock %}
+            {% endif %}
             {% if is_front %}
                 {# Menu Lateral #}
                 {% if page.menu_lateral %}
@@ -132,15 +141,6 @@
                     {% endblock %}
                 {% endif %}
             {% endif %}
-            {# Header #}
-            {% if page.header %}
-                {% block header %}
-                    <div class="col-sm-12" role="heading">
-                        {{ page.header }}
-                    </div>
-                {% endblock %}
-            {% endif %}
-
             {# Content #}
             {%
         set content_classes = [
