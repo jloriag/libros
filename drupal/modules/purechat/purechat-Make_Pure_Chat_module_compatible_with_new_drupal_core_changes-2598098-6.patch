@@ -1,0 +1,637 @@
+diff --git a/README.txt b/README.txt
+index 47716b1..8254c8f 100644
+--- a/README.txt
++++ b/README.txt
+@@ -1,19 +1,30 @@
+-// $Id: README.txt,v 1.0 2014/02/24 16:45:15 rajeshrhino Exp $
++Drupal Pure Chat module:
++------------------------
++Maintainers:
++  rajeshrhino (https://www.drupal.org/user/1358536)
+ 
+-### ABOUT
++Overview:
++--------
++Pure Chat increases engagement between you and your visitors, by allowing them
++to chat with you! Great for improving interaction with your users and
++increasing the time they spend on your site.
+ 
+-  This module adds the necessary script to the footer of ones site for prompting users to chat via purechat.
++Usage:
++------
++You need to create an account with Pure Chat to use this module.
+ 
+-  Current Features:
+-      * Administration settings to allow setting your account number for the script
+-      * Setting the pages in which to show the script:
+-            o From a blacklist of pages
+-            o From a whitelist of pages
+-            o By returning a value of true or false from PHP snippet
+-      * Setting visibility of script by role
++Features:
++---------
++* Administration settings to allow setting your account number for the script
++* Setting the pages in which to show the script:
++  * From a blacklist of pages
++  * From a whitelist of pages
++*Setting visibility of script by role.
+ 
+-### INSTALLING
+-
+-  1. Extract purechat tarball into your sites/all/modules or modules directory so it looks like sites/all/modules/purechat or modules/purechat
+-  2. Navigate to Extend and enable the module.
+-  3. Navigate to Configuration -> System -> Purechat and add your account number as well as any other configuration options you want. NOTE: For using PHP code for visibility settings, you need to manually install PHP Filter module, as this module is removed from drupal core.
++Installation:
++-------------
++1. Extract Pure Chat tarball into your "sites/all/modules/" or "modules/"
++   directory so it looks like "sites/all/modules/purechat/ or "modules/purechat"
++2. Navigate to "admin/modules" and enable the module.
++3. Navigate to Configuration -> Web services -> Pure Chat and add your account
++   number as well as any other configuration options you want.
+diff --git a/config/install/purechat.settings.yml b/config/install/purechat.settings.yml
+index e69de29..5c3a20e 100644
+--- a/config/install/purechat.settings.yml
++++ b/config/install/purechat.settings.yml
+@@ -0,0 +1,9 @@
++account_number: ''
++visibility: 0
++pages:
++ - '/admin'
++ - '/admin/*'
++ - '/node/add/*'
++ - '/node/*/edit'
++ - '/user/*/*'
++roles:
+diff --git a/config/schema/purechat.schema.yml b/config/schema/purechat.schema.yml
+index e69de29..49f7eff 100644
+--- a/config/schema/purechat.schema.yml
++++ b/config/schema/purechat.schema.yml
+@@ -0,0 +1,22 @@
++purechat.settings:
++  type: config_object
++  label: 'Pure Chat settings'
++  mapping:
++    account_number:
++      type: string
++      label: 'Pure Chat account number'
++    visibility:
++      type: integer
++      label: 'Show Pure Chat widget on specific pages'
++    pages:
++      type: sequence
++      label: 'Pages'
++      sequence:
++        - type: string
++          label: 'Page'
++    roles:
++      type: sequence
++      label: 'Hide Pure Chat widget for specific user roles'
++      sequence:
++        - type: string
++          label: 'Role'
+diff --git a/js/purechat.js b/js/purechat.js
+index e69de29..684fdaf 100644
+--- a/js/purechat.js
++++ b/js/purechat.js
+@@ -0,0 +1,24 @@
++window.purechatApi = {
++  l: [],
++  t: [],
++  on: function() {
++    this.l.push(arguments);
++  }
++};
++(function() {
++  var done = false;
++  var script = document.createElement('script');
++  script.async = true;
++  script.type = 'text/javascript';
++  script.src = 'https://app.purechat.com/VisitorWidget/WidgetScript';
++  document.getElementsByTagName('HEAD').item(0).appendChild(script);
++  script.onreadystatechange = script.onload = function(e) {
++    if (!done && (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete')) {
++      var w = new PCWidget({
++        c: drupalSettings.purechat.account_number,
++        f: true
++      });
++      done = true;
++    }
++  };
++})();
+diff --git a/purechat.info.yml b/purechat.info.yml
+index 879bde5..c964225 100644
+--- a/purechat.info.yml
++++ b/purechat.info.yml
+@@ -1,7 +1,6 @@
+-name: Purechat
+-description: 'Adds purechat javascript tracking code to all your sites pages.'
+-package: Statistics
++name: Pure Chat
+ type: module
+-version: 1.0
++description: Adds Pure Chat javascript tracking code to all your sites pages.
++package: Utility
+ core: 8.x
+-configure: admin/config/system/purechat
+\ No newline at end of file
++configure: purechat.settings
+diff --git a/purechat.install b/purechat.install
+index cbe50ab..b324db3 100644
+--- a/purechat.install
++++ b/purechat.install
+@@ -1,36 +1,28 @@
+ <?php
+-// $Id: purechat.install,v 1.0 2014/02/14 11:58:20 rajeshrhino Exp $
+ 
+ /**
+  * @file
+- * Installation file for Purechat module.
++ * Install, update and uninstall functions for the Pure Chat module.
+  */
+ 
+ /**
+- * Implementation of hook_install().
++ * Implementation of hook_requirements().
+  */
+-function purechat_install() {
+-	// Remove tracking from all administrative pages
+-  $pages = array(
+-    'admin',
+-    'admin/*',
+-    'user/*/*',
+-    'node/add*',
+-    'node/*/*',
+-  );
+-	
+-	$config = \Drupal::config('purechat.settings');
+-	// Set the purechat visibility.
+-	$config->set('purechat_visibility', 0);
+-  // Set the pages to remove tracking
+-	$config->set('purechat_pages', @implode("\r\n" , $pages));
+-	// Save your data to the file system.
+-	$config->save();
+-}
++function purechat_requirements($phase) {
++  $requirements = [];
+ 
+-/**
+- * Implementation of hook_uninstall().
+- */
+-function purechat_uninstall() {
+-  \Drupal::config('purechat.settings')->delete();
++  if ($phase == 'runtime') {
++    // Raise warning if Pure Chat user account has not been set yet.
++    if (\Drupal::config('purechat.settings')->get('account_number', FALSE) == FALSE) {
++      $requirements['purechat'] = [
++        'title' => t('Pure Chat module'),
++        'description' => t('Pure Chat module has not been configured yet. Please configure its settings from the <a href=":url">Pure Chat settings page</a>.', [':url' => \Drupal::url('purechat.settings')]),
++        'severity' => REQUIREMENT_ERROR,
++        'value' => t('Not configured'),
++      ];
++    }
++  }
++
++  return $requirements;
+ }
++
+diff --git a/purechat.libraries.yml b/purechat.libraries.yml
+index e69de29..872b860 100644
+--- a/purechat.libraries.yml
++++ b/purechat.libraries.yml
+@@ -0,0 +1,6 @@
++purechat:
++  version: VERSION
++  js:
++    js/purechat.js: { scope: footer }
++  dependencies:
++    - core/drupalSettings
+diff --git a/purechat.links.menu.yml b/purechat.links.menu.yml
+index e69de29..e9d89d5 100644
+--- a/purechat.links.menu.yml
++++ b/purechat.links.menu.yml
+@@ -0,0 +1,5 @@
++purechat.settings:
++ title: 'Pure Chat'
++ description: 'Configure the settings for Pure Chat.'
++ parent: system.admin_config_services
++ route_name: purechat.settings
+diff --git a/purechat.links.task.yml b/purechat.links.task.yml
+index e69de29..a12cf17 100644
+--- a/purechat.links.task.yml
++++ b/purechat.links.task.yml
+@@ -0,0 +1,4 @@
++purechat.settings:
++ title: 'Pure Chat'
++ route_name: purechat.settings
++ base_route: purechat.settings
+diff --git a/purechat.module b/purechat.module
+index 334c8eb..add7615 100644
+--- a/purechat.module
++++ b/purechat.module
+@@ -1,190 +1,135 @@
+ <?php
+-// $Id: purechat.module,v 1.0 2014/02/14 11:25:00 purechat Exp $
+ 
+ /*
+  * @file
+- * Drupal Module: purechat
+- * Adds the required Javascript for Purechat chat to the bottom of all your Drupal pages
++ * Adds the required Javascript for Pure Chat widget to the bottom of all your
++ * Drupal pages.
+  */
+- 
++
++use Drupal\Component\Utility\Unicode;
++use Drupal\Core\Path\PathMatcher;
++use Drupal\Core\Url;
++
++define('PURECHAT_BLACKLIST_MODE', 0);
++define('PURECHAT_WHITELIST_MODE', 1);
++
+ /**
+- * Implementation of hook_help().
+- *
+- * @param string $path
+- *   router menu path.
+- * @param array $arg
+- *   array corresponding to return value of arg().
+- * @return string
+- *   localized string containing help text.
++ * Implements hook_page_attachments().
+  */
+-function purechat_help($path, $arg) {
+-  switch ($path) {
+-    case 'admin/help#purechat':
+-      return;
++function purechat_page_attachments(array &$page) {
++  // Load module settings.
++  $config = \Drupal::config('purechat.settings');
++
++  static $already_added = FALSE;
++  // Don't add the Pure Chat widget multiple times.
++  if ($already_added) {
++    return;
++  }
++  // Don't add the Pure Chat widget during installation.
++  if (drupal_installation_attempted()) {
++    return;
++  }
++  // Don't add the Pure Chat widget if it's not configured.
++  if (empty($config->get('account_number'))) {
++    return;
++  }
++  // Don't add the Pure Chat widget on speified paths.
++  if (!_purechat_active()) {
++    return;
++  }
++  // Don't add the Pure Chat widget for speified roles.
++  if (!_purechat_role()) {
++    return;
+   }
+-} 
+ 
+-/**
+- * Implementation of hook_permission().
+- *
+- * @return array
+- *   Array of available permissions
+- */
+-function purechat_permission() {
+-	return array(
+-		'administer purechat' => array(
+-			'title' => t('Administer Purechat module'),
+-			'description' => t('Permission to change Purechat settings')
+-		),
+-		'use PHP for Purechat visibility' => array(
+-			'title' => t('Use PHP for Purechat visibility'),
+-			'description' => t('Permission to set PHP conditions to customize Purechat visibility on various pages')
+-		)
+-	);
+-}
+- 
+-/**
+- * Implements hook_menu().
+- */
+-function purechat_menu() {
+-	//Drupal::moduleHandler()->uninstall(array('php'));
+-	
+-  $items['admin/config/system/purechat'] = array(
+-    'title' => 'Purechat',
+-    'type' => MENU_NORMAL_ITEM,
+-		'description' => 'Configure the settings used to generate your Purechat code.',
+-    'route_name' => 'purechat.settings'
+-  );
+-  
+-  return $items;
++  // Insert options as javascript settings.
++  $js_settings = [
++    'account_number' => $config->get('account_number'),
++  ];
++
++  // Add Pure Chat js settings.
++  $page['#attached']['drupalSettings']['purechat'] = $js_settings;
++
++  // Add and initialise the Pure Chat widget.
++  $page['#attached']['library'][] = 'purechat/purechat';
++
++  $already_added = TRUE;
+ }
+ 
+ /**
+- * Implementation of hook_page_alter().
++ * Check if Pure Chat widget should be active for the current URL.
+  *
+- * @global object $user
+- *   full user object for current user
+- * @param  $page
+- *   nested array of renderable elements that make up the page.
++ * @return boolean
++ *   TRUE if it should be active for the current page, otherwise FALSE.
+  */
+-function purechat_page_alter(&$page) {
+-	global $user;
+-  $id = \Drupal::config('purechat.settings')->get('purechat_account');
+-	// 1. Check if the Purechat account number has a value.
+-  // 2. Add JS based on visibility value.
+-  // 3. Check if we should add the JS for the currently active user's role.
+-  if (!empty($id) && _purechat_visibility_pages() && _purechat_visibility_user_test($user)) {
+-    $script = <<<EOS
+-	document.write(unescape("%3Cscript type='text/javascript'%3E(function () { var done = false; var script = document.createElement('script'); script.async = true; script.type = 'text/javascript'; script.src = 'https://widget.purechat.com/VisitorWidget/WidgetScript'; document.getElementsByTagName('HEAD').item(0).appendChild(script); script.onreadystatechange = script.onload = function (e) { if (!done && (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete')) { var w = new PCWidget({ c: '{$id}', f: true }); done = true; } }; })();%3C/script%3E"));
+-EOS;
+-    _drupal_add_js($script, array('type' => 'inline', 'scope' => 'footer'));
++function _purechat_active() {
++  // Make it possible deactivate Pure Chat with
++  // parameter ?purechat=no in the url.
++  if (isset($_GET['purechat']) && $_GET['purechat'] == 'no') {
++    return FALSE;
+   }
+-}
+ 
+-/**
+- * Implementation of hook_requirements().
+- *
+- * @param string $phase
+- *   either 'install' or 'runtime' depending on install or status report page.
+- * @return array
+- *   associative array of requirements
+- */
+-function purechat_requirements($phase) {
+-  $requirements = array();
+-  if ($phase == 'runtime') {
+-    // Raise warning if Purechat user account has not been set yet.
+-    if (\Drupal::config('purechat.settings')->get('purechat_account', false) == false) {
+-      $requirements['purechat'] = array(
+-        'title' => t('Purechat module'),
+-        'description' => t('Purechat module has not been configured yet. Please configure its settings from the <a href="@url">Purechat settings page</a>.', array('@url' => url('admin/settings/purechat'))),
+-        'severity' => REQUIREMENT_ERROR,
+-        'value' => t('Not configured'),
+-      );
+-    }
++  // Assume there are not matches until one is found.
++  $page_match = FALSE;
++
++  // Convert path to lowercase. This allows comparison of the same path
++  // with different case. Ex: /Page, /page, /PAGE.
++  $config = \Drupal::config('purechat.settings');
++  $pages = Unicode::strtolower(_purechat_array_to_string($config->get('pages')));
++
++  // Compare the lowercase path alias (if any) and internal path.
++  $path = \Drupal::service('path.current')->getPath();
++  $current_language = \Drupal::languageManager()->getCurrentLanguage()->getId();
++  $path_alias = Unicode::strtolower(\Drupal::service('path.alias_storage')->lookupPathAlias($path, $current_language));
++  $page_match = \Drupal::service('path.matcher')->matchPath($path_alias, $pages);
++  if ($path_alias != $path) {
++    $page_match = $page_match || \Drupal::service('path.matcher')->matchPath($path, $pages);
+   }
+-  return $requirements;
++  $page_match = $config->get('visibility') == PURECHAT_BLACKLIST_MODE ? !$page_match : $page_match;
++
++  return $page_match;
+ }
+ 
+ /**
+- * Utility function to determing visibility.
+- * Based on visibility setting this function returns TRUE if Purechat code should
+- * be added to the current page and otherwise FALSE.
++ * Check if Pure Chat widget should be active for the current user role.
+  *
+- * @staticvar boolean $page_match
+- *   whether page is visible (true) or not (false).
+  * @return boolean
+- *   a decision on visibility, true/false
++ *   TRUE if it should be active for the current user, otherwise FALSE.
+  */
+-function _purechat_visibility_pages() {
+-  static $page_match;
+-  // Cache visibility setting in hook_init for hook_footer.
+-  if (!isset($page_match)) {
+-	  $visibility = \Drupal::config('purechat.settings')->get('purechat_visibility');
+-    $pages = \Drupal::config('purechat.settings')->get('purechat_pages');
+-		// Match path if necessary.
+-    if (!empty($pages)) {
+-      if ($visibility < 2) {
+-				$path = Drupal::service('path.alias_manager.cached')->getPathAlias(current_path());
+-				// Compare with the internal and path alias (if any).
+-        $page_match = drupal_match_path($path, $pages);
+-				if ($path != current_path()) {
+-          $page_match = $page_match || drupal_match_path(current_path(), $pages);
+-        }
+-        // When $visibility has a value of 0, the block is displayed on
+-        // all pages except those listed in $pages. When set to 1, it
+-        // is displayed only on those pages listed in $pages.
+-        $page_match = !($visibility xor $page_match);
+-      }
+-      elseif (module_exists('php')) {
+-        $page_match = php_eval($pages);
+-      }
+-    }
+-    else {
+-      $page_match = TRUE;
+-    }
++function _purechat_role() {
++  $current_user_roles = Drupal::currentUser()->getRoles();
++  $selected_roles = \Drupal::config('purechat.settings')->get('roles');
++
++  if (count($selected_roles) == 0 || !array_intersect($current_user_roles, $selected_roles)) {
++    return TRUE;
+   }
+-  return $page_match;
++
++  return FALSE;
+ }
+ 
+ /**
+- * Utility function to perform tracking visibility check for an user object.
++ * Converts a text with lines (\n) into an array of lines.
+  *
+- * @param object $account
+- *   a user object containing an array of roles to check.
+- * @return boolean
+- *   a decision on if the current user is being tracked by Purechat.
++ * @param string $text
++ *   Text with lines to convert.
++ *
++ * @return array
++ *   Array with as many items as non-empty lines in the text.
+  */
+-function _purechat_visibility_user_test($account) {
+-  $enabled = FALSE;
+-  // Is current user a member of a role that should be tracked?
+-  if (_purechat_visibility_roles($account)) {
+-    $enabled = TRUE;
+-  }
+-  return $enabled;
++function _purechat_string_to_array($text) {
++  $text = str_replace("\r\n", "\n", $text);
++  return array_filter(explode("\n", $text), 'trim');
+ }
+ 
+ /**
+- * Based on visibility setting this function returns TRUE if Purechat code should
+- * be added for the current role and otherwise FALSE.
++ * Converts an array of lines into an text with lines (\n).
+  *
+- * @param object $account
+- *   a full user object.
+- * @return boolean
+- *   a decision on visibility, true/false
++ * @param array $array
++ *   Array to convert to text with lines.
++ *
++ * @return string
++ *   Text with lines.
+  */
+-function _purechat_visibility_roles($account) {
+-  $enabled = TRUE;
+-  $roles = \Drupal::config('purechat.settings')->get('purechat_roles');
+-	if (count($roles) > 0) {
+-    // One or more roles are selected for tracking.
+-		foreach ($account->getRoles() as $rid => $rname) {
+-      // Is the current user a member of one role selected in admin settings?
+-			if (isset($roles[$rname]) && $rname == $roles[$rname]) {
+-        // Current user is a member of a role that is selected in admin settings.
+-        $enabled = FALSE;
+-        break;
+-      }
+-    }
+-  }
+-  return $enabled;
++function _purechat_array_to_string($array) {
++  return implode("\r\n", $array);
+ }
+diff --git a/purechat.permissions.yml b/purechat.permissions.yml
+index e69de29..3aac4ca 100644
+--- a/purechat.permissions.yml
++++ b/purechat.permissions.yml
+@@ -0,0 +1,3 @@
++administer purechat:
++  title: 'Administer Pure Chat module'
++  description: 'Permission to change Pure Chat settings'
+diff --git a/purechat.routing.yml b/purechat.routing.yml
+index 4cc4171..dc6d686 100644
+--- a/purechat.routing.yml
++++ b/purechat.routing.yml
+@@ -1,6 +1,7 @@
+ purechat.settings:
+-  path: 'admin/config/system/purechat'
++  path: 'admin/config/services/purechat'
+   defaults:
+-    _form: '\Drupal\purechat\Form\PurechatForm'
++    _form: '\Drupal\purechat\Form\SettingsForm'
++    _title: 'Pure Chat'
+   requirements:
+     _permission: 'administer purechat'
+diff --git a/src/Form/SettingsForm.php b/src/Form/SettingsForm.php
+index e69de29..5fa24d2 100644
+--- a/src/Form/SettingsForm.php
++++ b/src/Form/SettingsForm.php
+@@ -0,0 +1,89 @@
++<?php
++
++/**
++ * @file
++ * Contains \Drupal\purechat\Form\SettingsForm.
++ */
++
++namespace Drupal\purechat\Form;
++
++use Drupal\Core\Form\ConfigFormBase;
++use Drupal\Core\Form\FormStateInterface;
++
++/**
++ * Provides the path admin overview form.
++ */
++class SettingsForm extends ConfigFormBase {
++
++  /**
++   * {@inheritdoc}
++   */
++  public function getFormId() {
++    return 'purechat_admin_settings_form';
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  protected function getEditableConfigNames() {
++    return ['purechat.settings'];
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function buildForm(array $form, FormStateInterface $form_state) {
++    $config = $this->config('purechat.settings');
++
++    $form['account_number'] = [
++      '#type' => 'textfield',
++      '#title' => t('Pure Chat account number'),
++      '#default_value' => $config->get('account_number'),
++      '#description' => t('The account number is unique to the websites domain and can be found in the script given to you by the Pure Chat account settings.<br/>Go to <a href=":purechat_url">Pure Chat Site</a>, login, click the settings tab and look at the code you are asked to paste into your site.<br/>The part of the code you need is:<br/>@code<br/>Where the x\'s represent your account number.', array(':purechat_url' => 'https://app.purechat.com/widgets', '@code' => "<code>var w = new PCWidget({ c: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', f: true });</code>")),
++      '#size' => 40,
++      '#maxlength' => 40,
++      '#required' => TRUE,
++    ];
++    $form['visibility'] = [
++      '#type' => 'radios',
++      '#title' => t('Show Pure Chat widget on specific pages'),
++      '#options' => [
++        PURECHAT_BLACKLIST_MODE => t('Hide for the listed pages'),
++        PURECHAT_WHITELIST_MODE => t('Show for the listed pages'),
++      ],
++      '#default_value' => $config->get('visibility'),
++    ];
++    $form['pages'] = [
++      '#type' => 'textarea',
++      '#title' => '<span class="visually-hidden">' . t('Pages') . '</span>',
++      '#default_value' => _purechat_array_to_string($config->get('pages')),
++      '#description' => t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %user for the current user's page and %user-wildcard for every user page. %front is the front page.", array('%user' => '/user', '%user-wildcard' => '/user/*', '%front' => '<front>')),
++    ];
++    $form['roles'] = [
++      '#type' => 'checkboxes',
++      '#title' => t('Hide Pure Chat widget for specific roles'),
++      '#options' => array_map('\Drupal\Component\Utility\Html::escape', user_role_names()),
++      '#default_value' => $config->get('roles'),
++      '#description' => t('Hide Pure Chat widget only for the selected role(s). If none of the roles are selected, all roles will have the widget. Otherwise, any roles selected here will NOT have the widget.'),
++    ];
++
++    return parent::buildForm($form, $form_state);
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function submitForm(array &$form, FormStateInterface $form_state) {
++    $values = $form_state->getValues();
++
++    $this->config('purechat.settings')
++      ->set('account_number', $values['account_number'])
++      ->set('visibility', $values['visibility'])
++      ->set('pages', _purechat_string_to_array($values['pages']))
++      ->set('roles', array_filter($values['roles']))
++      ->save();
++
++    parent::submitForm($form, $form_state);
++  }
++
++}
